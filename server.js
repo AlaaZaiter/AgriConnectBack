@@ -21,6 +21,7 @@ const orderRoute= require('./routes/orderRoute')
 const cartRoute = require('./routes/cartRoute')
 const postRoute = require('./routes/postRoute')
 const discussionRoute = require('./routes/discussionRoute')
+const paymentRoute = require('./routes/paymentRoute')
 app.use('/user',userRoute);
 app.use('/category',categoryRoute)
 app.use('/product',productRoute)
@@ -28,6 +29,7 @@ app.use('/order',orderRoute)
 app.use('/cart',cartRoute)
 app.use('/post',postRoute)
 app.use('/discussion',discussionRoute)
+app.use('/payment',paymentRoute)
 
 
 

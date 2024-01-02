@@ -58,6 +58,8 @@ const addProduct = async (req, res) => {
     description,
     price,
     CategoryId,
+    AdminUserID,
+    discount,
   } = req.body;
 
   try {
@@ -67,8 +69,9 @@ const addProduct = async (req, res) => {
    
     console.log(image.downloadURL)
     const result = await connection.query(
-      `INSERT INTO product (Title, stock, description, price, image, CategoryId) VALUES (?,?,?,?,?,?);`,
-      [Title,  stock, description, price, image.downloadURL, CategoryId]
+      `INSERT INTO product (Title, stock, description, price, image, CategoryId,AdminUserID,
+        discount) VALUES (?,?,?,?,?,?,?,?);`,
+      [Title,  stock, description, price, image.downloadURL, CategoryId,AdminUserID,discount,]
     );
 
     console.log(result);
@@ -88,17 +91,19 @@ const addProduct = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { Title, stock, description, price, CategoryId } = req.body;
+  const { Title, stock, description, price, CategoryId ,AdminUserID,
+    discount} = req.body;
   const ProductImage = await FileUpload(req.files.image[0]);
 
   const query = `
     UPDATE product
-    SET Title = ?, stock = ?, description = ?, price = ?, image = ?, CategoryId = ?
+    SET Title = ?, stock = ?, description = ?, price = ?, image = ?, CategoryId = ?,AdminUserID = ?,
+    discount = ?
     WHERE id = ?
   `;
 
   try {
-    if (!Title || !stock || !description || !price || !ProductImage || !CategoryId) {
+    if (!Title ||!AdminUserID || !discount || !stock || !description || !price || !ProductImage || !CategoryId) {
       return res.status(400).json({
         success: false,
         message: `Enter all fields to update product with id = ${ID}.`,
@@ -112,6 +117,8 @@ const updateByID = async (req, res) => {
       price,
       ProductImage.downloadURL,
       CategoryId,
+      AdminUserID,
+    discount,
       ID,
     ]);
 
