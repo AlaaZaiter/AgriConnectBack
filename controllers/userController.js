@@ -1,5 +1,7 @@
 const connection = require('../config/db');
 const bcrypt = require('bcrypt');
+const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
 const { generateToken } = require('../extra/generateToken');
 
 const getAll = async (_, res) => {
@@ -75,22 +77,31 @@ const login = async (req, res) => {
 };
 
 const register = async (req, res) => {
-  const { FullName, email, password } = req.body;
+  const { FullName, email, password, phoneNumber } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
-  const query = `INSERT INTO users (FullName, email, password) VALUES (?, ?, ?);`;
+
+  // Generate a verification token
+  const verificationToken = crypto.randomBytes(20).toString('hex');
+
+  // Insert user data along with the verification token into the database
+  const query = `INSERT INTO users (FullName, email, phoneNumber, password, verificationToken) VALUES (?, ?, ?, ?, ?);`;
   try {
     const [response] = await connection.query(query, [
-        FullName,
+      FullName,
       email,
+      phoneNumber,
       hashedPassword,
+      verificationToken,
     ]);
-    const [data] = await getUserByID(response.insertId);
-    // const token = generateToken(data.ID, data.role);
+
+    // Send verification email
+    const verificationUrl = `${process.env.VERIFICATION_EMAIL_BASE_URL}?token=${verificationToken}`;
+    const emailText = `Please verify your email by clicking on the link: ${verificationUrl}`;
+    await sendEmail(email, "Email Verification", emailText);
+
     res.status(200).json({
       success: true,
-      message: `User registered successfully`,
-      // data: { ...data, token: token },
-      data: data,
+      message: "User registered successfully. Please check your email to verify your account."
     });
   } catch (error) {
     return res.status(400).json({
@@ -103,11 +114,11 @@ const register = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { fullName, email } = req.body;
-  const query = `UPDATE users SET FullName = ?, email = ? WHERE id = ?;`;
+  const { fullName, email ,phoneNumber} = req.body;
+  const query = `UPDATE users SET FullName = ?, email = ?,phoneNumber=? WHERE id = ?;`;
 
   try {
-    const [response] = await connection.query(query, [fullName, email, ID]);
+    const [response] = await connection.query(query, [fullName, email,phoneNumber, ID]);
     if (!response.affectedRows)
       return res.status(400).json({
         success: false,
@@ -178,7 +189,7 @@ const deleteByID = async (req, res) => {
 };
 
 const getUserByID = async (ID) => {
-  const query = `SELECT id, FullName, email, role FROM users WHERE id = ?;`;
+  const query = `SELECT id, FullName, email, role,created_at	 FROM users WHERE id = ?;`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;
@@ -213,6 +224,22 @@ const addFarmer = async (req, res) => {
       });
     }
   };
+  const verifyEmail = async (req, res) => {
+    const { token } = req.query;
+  
+    const query = `UPDATE users SET isEmailVerified = true WHERE verificationToken = ?;`;
+    try {
+      const [response] = await connection.query(query, [token]);
+  
+      if (response.affectedRows === 0) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+  
+      res.status(200).json({ message: "Email verified successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Error verifying email" });
+    }
+  };
 
 module.exports = {
   getAll,
@@ -223,4 +250,5 @@ module.exports = {
   switchToAdmin,
   deleteByID,
   addFarmer,
+  verifyEmail,
 };

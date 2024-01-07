@@ -70,7 +70,7 @@ const addCategory = async (req, res) => {
 const updateByID = async (req, res) => {
   const { ID } = req.params;
   const { Title } = req.body;
-  const query = `UPDATE category SET Title = ? WHERE ID = ?`;
+  const query = `UPDATE category SET Title = ? WHERE id = ?`;
   console.log(req.body);
   try {
     if (!Title ) {
@@ -109,7 +109,7 @@ const updateByID = async (req, res) => {
 
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
-  const query = `DELETE FROM category WHERE ID = ?`;
+  const query = `DELETE FROM category WHERE id = ?`;
   try {
     const [response] = await connection.query(query, [ID]);
     if (!response.affectedRows)
@@ -131,7 +131,7 @@ const deleteByID = async (req, res) => {
 };
 
 const getCategoryByID = async (ID) => {
-  const query = `SELECT * FROM category WHERE ID = ?`;
+  const query = `SELECT * FROM category WHERE id = ?`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;

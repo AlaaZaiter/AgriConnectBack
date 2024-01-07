@@ -43,12 +43,12 @@ const getByID = async (req, res) => {
 };
 
 const addCart = async (req, res) => {
-  const { customerId,	ProductId,	Quantity,	TotalAmount	} = req.body;
+  const { customerId	} = req.body;
 
   try {
     const result = await connection.query(
-      'INSERT INTO `cart` (customerId, ProductId, Quantity, TotalAmount) VALUES (?,?,?,?);',
-      [customerId,	ProductId,	Quantity,	TotalAmount	]
+      'INSERT INTO `cart` (customerId) VALUES (?);',
+      [customerId	]
     );
 
     console.log(result);
@@ -68,16 +68,16 @@ const addCart = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { customerId,	ProductId,	Quantity,	TotalAmount	 } = req.body;
+  const { customerId } = req.body;
 
   const query = `
     UPDATE \`cart\`
-    SET customerId = ?, ProductId = ?, Quantity = ?, TotalAmount = ?
+    SET customerId = ?
     WHERE id = ?
   `;
 
   try {
-    if (!customerId || !ProductId || !Quantity || !TotalAmount ) {
+    if (!customerId  ) {
       return res.status(400).json({
         success: false,
         message: `Enter all fields to update order with id = ${ID}.`,
@@ -86,9 +86,7 @@ const updateByID = async (req, res) => {
 
     const [response] = await connection.query(query, [
         customerId,
-    	ProductId,
-    	Quantity,
-    	TotalAmount,	
+    		
         ID,
     ]);
 

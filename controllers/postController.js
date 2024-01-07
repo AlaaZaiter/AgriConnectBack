@@ -29,6 +29,8 @@ const getAll = async (_, res) => {
   }
 };
 
+
+
 const getByID = async (req, res) => {
   const ID = req.params.ID;
   const response = await getPostByID(ID);
@@ -55,7 +57,6 @@ const addPost = async (req, res) => {
   const {
     Content,	
     FarmerUserID,
-	DiscussionID,
   } = req.body;
 
   try {
@@ -67,11 +68,10 @@ const addPost = async (req, res) => {
     const result = await connection.query(
       `INSERT INTO forumpost (Content,	
         FarmerUserID,
-        DiscussionID,
-        File) VALUES (?,?,?,?);`,
+        File) VALUES (?,?,?);`,
       [Content,	
         FarmerUserID,
-        DiscussionID, image.downloadURL]
+         image.downloadURL]
     );
 
     console.log(result);
@@ -93,17 +93,17 @@ const updateByID = async (req, res) => {
   const { ID } = req.params;
   const { Content,	
     FarmerUserID,
-	DiscussionID ,} = req.body;
+	} = req.body;
   const File = await FileUpload(req.files.File[0]);
 
   const query = `
     UPDATE forumpost
-    SET Content = ?, FarmerUserID = ?, DiscussionID = ?, File = ?
+    SET Content = ?, FarmerUserID = ?,  File = ?
     WHERE id = ?
   `;
 
   try {
-    if (!Content || !FarmerUserID || !DiscussionID || !File ) {
+    if (!Content || !FarmerUserID || !File ) {
       return res.status(400).json({
         success: false,
         message: `Enter all fields to update forumpost with id = ${ID}.`,
@@ -113,7 +113,6 @@ const updateByID = async (req, res) => {
     const [response] = await connection.query(query, [
         Content,	
         FarmerUserID,
-        DiscussionID,
       File.downloadURL,
       ID,
     ]);
@@ -166,6 +165,15 @@ const deleteByID = async (req, res) => {
 
 const getPostByID = async (ID) => {
   const query = `SELECT * FROM forumpost WHERE id = ?`;
+  try {
+    const [response] = await connection.query(query, [ID]);
+    return response;
+  } catch (error) {
+    return error.message;
+  }
+};
+const getDiscussiontByID = async (ID) => {
+  const query = `SELECT * FROM disucssion WHERE id = ?`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;

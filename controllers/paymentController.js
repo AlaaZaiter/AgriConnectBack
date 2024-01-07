@@ -43,12 +43,12 @@ const getByID = async (req, res) => {
 };
 
 const addPayment = async (req, res) => {
-  const {OrderID,Amount,PaymentStatus,TransactionID } = req.body;
+  const {OrderID,Amount,PaymentStatus,PaymentMethod } = req.body;
 
   try {
     const result = await connection.query(
-      'INSERT INTO `payment` (OrderID,Amount,PaymentStatus,TransactionID) VALUES (?,?,?,?);',
-      [OrderID,Amount,PaymentStatus,TransactionID]
+      'INSERT INTO `payment` (OrderID,Amount,PaymentStatus,PaymentMethod) VALUES (?,?,?,?);',
+      [OrderID,Amount,PaymentStatus,PaymentMethod]
     );
 
     console.log(result);
@@ -68,16 +68,16 @@ const addPayment = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { OrderID,Amount,PaymentStatus,TransactionID } = req.body;
+  const { OrderID,Amount,PaymentStatus,PaymentMethod } = req.body;
 
   const query = `
     UPDATE \`payment\`
-    SET OrderID = ?, Amount = ?, PaymentStatus = ?, TransactionID = ?
+    SET OrderID = ?, Amount = ?, PaymentStatus = ?, PaymentMethod = ?
     WHERE id = ?
   `;
 
   try {
-    if (!OrderID || !Amount || !PaymentStatus || !TransactionID ) {
+    if (!OrderID || !Amount || !PaymentStatus || !PaymentMethod ) {
       return res.status(400).json({
         success: false,
         message: `Enter all fields to update payment with id = ${ID}.`,
@@ -88,7 +88,7 @@ const updateByID = async (req, res) => {
         OrderID,
         Amount,
         PaymentStatus,
-        TransactionID,
+        PaymentMethod,
         ID,
     ]);
 

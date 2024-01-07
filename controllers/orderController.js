@@ -2,7 +2,7 @@ const { format } = require('date-fns');
 const connection = require('../config/db');
 
 const getAll = async (_, res) => {
-  const query = `SELECT * FROM \`order\``;
+  const query = `SELECT * FROM \`orders\``;
   try {
     const [response] = await connection.query(query);
     return res.status(200).json({
@@ -43,12 +43,12 @@ const getByID = async (req, res) => {
 };
 
 const addOrder = async (req, res) => {
-  const { UserID, ProductId, Quantity, TotalAmount, orderStatus } = req.body;
+  const { UserID,  TotalAmount, orderStatus } = req.body;
 
   try {
     const result = await connection.query(
-      'INSERT INTO `order` (UserID, ProductId, Quantity, TotalAmount, orderStatus) VALUES (?,?,?,?,?);',
-      [UserID, ProductId, Quantity, TotalAmount, orderStatus]
+      'INSERT INTO `orders` (UserID,  TotalAmount, orderStatus) VALUES (?,?,?);',
+      [UserID,  TotalAmount, orderStatus]
     );
 
     console.log(result);
@@ -68,16 +68,16 @@ const addOrder = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { UserID, ProductId, Quantity, TotalAmount, orderStatus } = req.body;
+  const { UserID,  TotalAmount, orderStatus } = req.body;
 
   const query = `
-    UPDATE \`order\`
-    SET UserID = ?, ProductId = ?, Quantity = ?, TotalAmount = ?, orderStatus = ?
+    UPDATE \`orders\`
+    SET UserID = ?,  TotalAmount = ?, orderStatus = ?
     WHERE id = ?
   `;
 
   try {
-    if (!UserID || !ProductId || !Quantity || !TotalAmount || !orderStatus) {
+    if (!UserID  || !TotalAmount || !orderStatus) {
       return res.status(400).json({
         success: false,
         message: `Enter all fields to update order with id = ${ID}.`,
@@ -86,8 +86,7 @@ const updateByID = async (req, res) => {
 
     const [response] = await connection.query(query, [
       UserID,
-      ProductId,
-      Quantity,
+      
       TotalAmount,
       orderStatus,
       ID,
@@ -117,7 +116,7 @@ const updateByID = async (req, res) => {
 
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
-  const query = `DELETE FROM \`order\` WHERE id = ?`;
+  const query = `DELETE FROM \`orders\` WHERE id = ?`;
   try {
     const [response] = await connection.query(query, [ID]);
     if (!response.affectedRows)
@@ -139,7 +138,7 @@ const deleteByID = async (req, res) => {
 };
 
 const getOrderByID = async (ID) => {
-  const query = `SELECT * FROM \`order\` WHERE id = ?`;
+  const query = `SELECT * FROM \`orders\` WHERE id = ?`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;

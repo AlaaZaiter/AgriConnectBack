@@ -9,7 +9,8 @@ const {
   updateByID,
   switchToAdmin,
   deleteByID,
-} = require('../controllers/userRoute');
+  verifyEmail,
+} = require('../controllers/userController');
 const isAuthenticated = require('../middlwares/isAuth');
 
 router.get('/getAll', getAll);
@@ -23,5 +24,7 @@ router.put(
   switchToAdmin
 );
 router.delete('/delete/:ID', isAuthenticated(['admin']), deleteByID);
+router.get('/verify', verifyEmail);
+
 
 module.exports = router;

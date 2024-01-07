@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { initializeApp } = require('firebase/app');
 const firebaseConfig = require('./config/firebase');
+const emailValidator = require('deep-email-validator');
+
 
 // Initialize firebase app
 initializeApp(firebaseConfig);
@@ -22,6 +24,9 @@ const cartRoute = require('./routes/cartRoute')
 const postRoute = require('./routes/postRoute')
 const discussionRoute = require('./routes/discussionRoute')
 const paymentRoute = require('./routes/paymentRoute')
+const postdiscussions=require('./routes/postdiscussionsRoute')
+const orderProducst = require('./routes/orderproductsRoute')
+const cartproducts = require('./routes/cartproductsRoute')
 app.use('/user',userRoute);
 app.use('/category',categoryRoute)
 app.use('/product',productRoute)
@@ -30,8 +35,13 @@ app.use('/cart',cartRoute)
 app.use('/post',postRoute)
 app.use('/discussion',discussionRoute)
 app.use('/payment',paymentRoute)
+app.use('/postdiscussions',postdiscussions)
+app.use('/orderProducst',orderProducst)
+app.use('/cartproducts',cartproducts)
 
-
+async function isEmailValid(email) {
+  return emailValidator.validate(email)
+}
 
 app.listen(PORT, () => {
     console.log(`Server is running on PORT ${PORT}`);
