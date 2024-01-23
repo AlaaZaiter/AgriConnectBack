@@ -1,8 +1,19 @@
-const connection = require('../config/db');
 const bcrypt = require('bcrypt');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const { generateToken } = require('../extra/generateToken');
+const { format } = require('date-fns');
+const connection = require('../config/db');
+
+const {
+    getStorage,
+    ref,
+    getDownloadURL,
+    uploadBytesResumable,
+  } = require('firebase/storage');
+
+  // Initialize Cloud Storage
+const storage = getStorage();
 
 const getAll = async (_, res) => {
   const query = `SELECT id, FullName, email, phoneNumber ,role FROM users;`;
@@ -43,14 +54,14 @@ const getByID = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-  const query = `SELECT * FROM users WHERE email = ?;`;
+  const query = `SELECT * FROM users WHERE email = ? and isEmailVerified = true;`;
   try {
     const [response] = await connection.query(query, [email]);
 
     if (!response.length)
       return res.status(400).json({
         success: false,
-        message: `User with email ${email} not found`,
+        message: `User with email ${email} not found or verified`,
       });
 
     const validPassword = await bcrypt.compare(password, response[0].password);
@@ -60,12 +71,13 @@ const login = async (req, res) => {
         message: `Entered password of email ${email} is wrong`,
       });
 
-    const token = generateToken(response[0].ID, response[0].role);
+    const token = generateToken(response[0].id, response[0].role);
 
     res.status(200).json({
       success: true,
       message: `User with email ${email} logged in successfully`,
       token: token,
+      data:response,
     });
   } catch (error) {
     return res.status(400).json({
@@ -79,12 +91,13 @@ const login = async (req, res) => {
 const register = async (req, res) => {
   const { FullName, email, password, phoneNumber } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
+  const ProductImage = await FileUpload(req.files.image[0]);
 
   // Generate a verification token
   const verificationToken = crypto.randomBytes(20).toString('hex');
 
   // Insert user data along with the verification token into the database
-  const query = `INSERT INTO users (FullName, email, phoneNumber, password, verificationToken) VALUES (?, ?, ?, ?, ?);`;
+  const query = `INSERT INTO users (FullName, email, phoneNumber, password, verificationToken,image) VALUES (?,?, ?, ?, ?, ?);`;
   try {
     const [response] = await connection.query(query, [
       FullName,
@@ -92,16 +105,23 @@ const register = async (req, res) => {
       phoneNumber,
       hashedPassword,
       verificationToken,
+      ProductImage.downloadURL,
     ]);
 
+    const [data] = await getUserByID(response.insertId);
+    const token = generateToken(data.id, data.role);
+
     // Send verification email
-    const verificationUrl = `${process.env.VERIFICATION_EMAIL_BASE_URL}?token=${verificationToken}`;
+    const verificationUrl = `${process.env.VERIFICATION_EMAIL_BASE_URL}?token=${verificationToken}&userToken=${token}`;
     const emailText = `Please verify your email by clicking on the link: ${verificationUrl}`;
     await sendEmail(email, "Email Verification", emailText);
 
     res.status(200).json({
       success: true,
-      message: "User registered successfully. Please check your email to verify your account."
+      message: "User registered successfully. Please check your email to verify your account.",
+       data: response ,
+       token: token,
+
     });
   } catch (error) {
     return res.status(400).json({
@@ -114,17 +134,36 @@ const register = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { fullName, email ,phoneNumber} = req.body;
-  const query = `UPDATE users SET FullName = ?, email = ?,phoneNumber=? WHERE id = ?;`;
+  const updatedFields = req.body;
+
+  if (Object.keys(updatedFields).length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'No fields to update provided',
+    });
+  }
+
+  const setClause = Object.keys(updatedFields)
+    .map(field => `${field} = ?`)
+    .join(', ');
+
+  const values = Object.values(updatedFields);
+  values.push(ID);
+
+  const query = `UPDATE users SET ${setClause} WHERE id = ?;`;
 
   try {
-    const [response] = await connection.query(query, [fullName, email,phoneNumber, ID]);
-    if (!response.affectedRows)
+    const [response] = await connection.query(query, values);
+
+    if (!response.affectedRows) {
       return res.status(400).json({
         success: false,
         message: `User with ID = ${ID} not found`,
       });
+    }
+
     const data = await getUserByID(ID);
+
     res.status(200).json({
       success: true,
       message: `User with ID = ${ID} updated successfully`,
@@ -138,6 +177,7 @@ const updateByID = async (req, res) => {
     });
   }
 };
+
 
 const switchToAdmin = async (req, res) => {
   const { ID } = req.params;
@@ -189,7 +229,7 @@ const deleteByID = async (req, res) => {
 };
 
 const getUserByID = async (ID) => {
-  const query = `SELECT id, FullName, email, role,created_at	 FROM users WHERE id = ?;`;
+  const query = `SELECT id, FullName, email, role,created_at,image	 FROM users WHERE id = ?;`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;
@@ -225,7 +265,7 @@ const addFarmer = async (req, res) => {
     }
   };
   const verifyEmail = async (req, res) => {
-    const { token } = req.query;
+    const { token } = req.body;
   
     const query = `UPDATE users SET isEmailVerified = true WHERE verificationToken = ?;`;
     try {
@@ -240,6 +280,46 @@ const addFarmer = async (req, res) => {
       res.status(500).json({ message: "Error verifying email" });
     }
   };
+  const FileUpload = async (file) => {
+    try {
+      const dateTime = giveCurrentDateTime();
+      const storageRef = ref(
+        storage,
+        `files/${file.originalname + ' ' + dateTime}`
+      );
+      const metadata = {
+        contentType: file.mimetype,
+      };
+      const snapshot = await uploadBytesResumable(
+        storageRef,
+        file.buffer,
+        metadata
+      );
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      console.log('File successfully uploaded.');
+      return {
+        message: 'file uploaded to firebase storage',
+        name: file.originalname,
+        type: file.mimetype,
+        downloadURL: downloadURL,
+      };
+    } catch (error) {
+      console.error('Error uploading file to Firebase Storage:', error.message);
+      console.error('Error details:', error.serverResponse); // Log server response
+      throw error; // Rethrow the error to handle it in the calling function
+    }
+  };
+  
+  
+    const giveCurrentDateTime = () => {
+        const today = new Date();
+        const date =
+          today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+        const time =
+          today.getHours() + ':' + today.getMinutes() + ':' + today.getSeconds();
+        const dateTime = date + ' ' + time;
+        return dateTime;
+      };
 
 module.exports = {
   getAll,

@@ -1,6 +1,16 @@
 const { format } = require('date-fns');
 const connection = require('../config/db');
 
+const {
+    getStorage,
+    ref,
+    getDownloadURL,
+    uploadBytesResumable,
+  } = require('firebase/storage');
+
+  // Initialize Cloud Storage
+const storage = getStorage();
+
 const getAll = async (_, res) => {
   const query = `SELECT * FROM category`;
   try {
@@ -43,20 +53,20 @@ const getByID = async (req, res) => {
 };
 
 const addCategory = async (req, res) => {
-  const { Title } = req.body;
-  const query = `INSERT INTO category (Title) VALUES (?)`;
+  const { Title ,AdminId} = req.body;
+  const image = await FileUpload(req.files.image[0]);
+
+  const query = `INSERT INTO category (Title,image,AdminId) VALUES (?,?,?)`;
 
   try {
     const [response] = await connection.query(query, [
-        Title,
+        Title,image.downloadURL,AdminId
       
     ]);
-    const data = await getCategoryByID(response.insertId);
-    if (!Array.isArray(data)) throw new Error(`Unable to add a new Category.`);
     return res.status(200).json({
       success: true,
       message: `Category added successfully.`,
-      data: { data},
+      data: { response},
     });
   } catch (error) {
     return res.status(400).json({
@@ -69,8 +79,10 @@ const addCategory = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { Title } = req.body;
-  const query = `UPDATE category SET Title = ? WHERE id = ?`;
+  const { Title,AdminId } = req.body;
+  const image = await FileUpload(req.files.image[0]);
+
+  const query = `UPDATE category SET Title = ?, image = ?, AdminId = ? WHERE id = ?`;
   console.log(req.body);
   try {
     if (!Title ) {
@@ -82,7 +94,8 @@ const updateByID = async (req, res) => {
 
     const [response] = await connection.query(query, [
         Title,
-     
+        image.downloadURL,
+        AdminId,
       ID,
     ]);
 
@@ -139,6 +152,46 @@ const getCategoryByID = async (ID) => {
     return error.message;
   }
 };
+const FileUpload = async (file) => {
+  try {
+    const dateTime = giveCurrentDateTime();
+    const storageRef = ref(
+      storage,
+      `files/${file.originalname + ' ' + dateTime}`
+    );
+    const metadata = {
+      contentType: file.mimetype,
+    };
+    const snapshot = await uploadBytesResumable(
+      storageRef,
+      file.buffer,
+      metadata
+    );
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log('File successfully uploaded.');
+    return {
+      message: 'file uploaded to firebase storage',
+      name: file.originalname,
+      type: file.mimetype,
+      downloadURL: downloadURL,
+    };
+  } catch (error) {
+    console.error('Error uploading file to Firebase Storage:', error.message);
+    console.error('Error details:', error.serverResponse); // Log server response
+    throw error; // Rethrow the error to handle it in the calling function
+  }
+};
+
+
+  const giveCurrentDateTime = () => {
+      const today = new Date();
+      const date =
+        today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+      const time =
+        today.getHours() + ':' + today.getMinutes() + ':' + today.getSeconds();
+      const dateTime = date + ' ' + time;
+      return dateTime;
+    };
 
 module.exports = {
   getAll,

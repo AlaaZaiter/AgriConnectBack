@@ -29,9 +29,10 @@ const getDiscussionsByPostId = async (req, res) => {
   const query = `
   SELECT * 
   FROM postdiscussions ps
-  JOIN disucssion d ON ps.DiscussionID = d.id
-  where ps.PostId = ?;
+  JOIN discussion d JOIN users u  ON ps.DiscussionID = d.id AND u.id =d.UserID
+  WHERE ps.PostId = ?;
 `;
+
 
 try {
   const [response] = await connection.query(query,[PostID]);
@@ -99,8 +100,34 @@ const addPostDiscussions = async (req, res) => {
 };
 
 
+const getMostPopularPosts = async (_, res) => {
+  const query = `SELECT * , COUNT(pd.DiscussionID) AS DiscussionCount
+  FROM forumpost p
+  JOIN postdiscussions pd ON p.id = pd.PostId
+  JOIN discussion d ON pd.DiscussionID = d.id
+  GROUP BY p.id
+  ORDER BY DiscussionCount DESC
+  LIMIT 4;
+`;
 
+try {
+  const [response] = await connection.query(query);
+  return res.status(200).json({
+    success: true,
+    message: `All postdiscussions retrieved successfully.`,
+    data: response,
+  });
+} catch (error) {
+  return res.status(400).json({
+    success: false,
+    message: `Unable to retrieve all postdiscussions.`,
+    error: error.message,
+  });
+}
+};
 
+/* 
+ */
 
 
 module.exports = {
@@ -108,4 +135,5 @@ module.exports = {
   addPostDiscussions,
   getDiscussionsByPostId,
   getPostsByDiscussionId,
+  getMostPopularPosts,
 };

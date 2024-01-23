@@ -43,21 +43,26 @@ const getByID = async (req, res) => {
 };
 
 const addCart = async (req, res) => {
-  const { customerId	} = req.body;
+  const { customerId } = req.body;
 
   try {
     const result = await connection.query(
       'INSERT INTO `cart` (customerId) VALUES (?);',
-      [customerId	]
+      [customerId]
     );
 
     console.log(result);
+
+    // Assuming 'insertId' holds the ID of the newly added cart
+    const newCartId = result.insertId;
+
     res.status(201).json({
       success: true,
       message: 'Data added successfully',
+      cartId: newCartId, // Send the new cart ID in the response
     });
   } catch (error) {
-    console.error('Error adding new order:', error);
+    console.error('Error adding new cart:', error);
     res.status(400).json({
       success: false,
       message: 'Unable to add new data',
@@ -65,6 +70,7 @@ const addCart = async (req, res) => {
     });
   }
 };
+
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;

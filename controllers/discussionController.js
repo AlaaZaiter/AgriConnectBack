@@ -50,11 +50,14 @@ const addDiscussion = async (req, res) => {
       'INSERT INTO discussion (Topic,content,UserID) VALUES (?,?,?);',
       [Topic,content,UserID]
     );
+    const DiscussionId = result[0].insertId;
+
 
     console.log(result);
     res.status(201).json({
       success: true,
       message: 'Data added successfully',
+      DiscussionId:DiscussionId,
     });
   } catch (error) {
     console.error('Error adding new order:', error);

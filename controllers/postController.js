@@ -92,18 +92,17 @@ const addPost = async (req, res) => {
 const updateByID = async (req, res) => {
   const { ID } = req.params;
   const { Content,	
-    FarmerUserID,
 	} = req.body;
   const File = await FileUpload(req.files.File[0]);
 
   const query = `
     UPDATE forumpost
-    SET Content = ?, FarmerUserID = ?,  File = ?
+    SET Content = ?,   File = ?
     WHERE id = ?
   `;
 
   try {
-    if (!Content || !FarmerUserID || !File ) {
+    if (!Content  || !File ) {
       return res.status(400).json({
         success: false,
         message: `Enter all fields to update forumpost with id = ${ID}.`,
@@ -112,7 +111,6 @@ const updateByID = async (req, res) => {
 
     const [response] = await connection.query(query, [
         Content,	
-        FarmerUserID,
       File.downloadURL,
       ID,
     ]);

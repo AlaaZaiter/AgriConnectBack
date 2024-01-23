@@ -46,21 +46,67 @@ const addOrder = async (req, res) => {
   const { UserID,  TotalAmount, orderStatus } = req.body;
 
   try {
-    const result = await connection.query(
+    const response = await connection.query(
       'INSERT INTO `orders` (UserID,  TotalAmount, orderStatus) VALUES (?,?,?);',
       [UserID,  TotalAmount, orderStatus]
     );
-
-    console.log(result);
+const orderId = response[0].insertId;
     res.status(201).json({
       success: true,
       message: 'Data added successfully',
+      orderId:orderId,
     });
   } catch (error) {
     console.error('Error adding new order:', error);
     res.status(400).json({
       success: false,
       message: 'Unable to add new data',
+      error: error.message,
+    });
+  }
+};
+
+const updateStatus = async (req, res) => {
+  const { ID } = req.params;
+  const {  orderStatus } = req.body;
+
+  const query = `
+    UPDATE \`orders\`
+    SET  orderStatus = ?
+    WHERE id = ?
+  `;
+
+  try {
+    if ( !orderStatus) {
+      return res.status(400).json({
+        success: false,
+        message: `Enter all fields to update order with id = ${ID}.`,
+      });
+    }
+
+    const [response] = await connection.query(query, [
+      
+      orderStatus,
+      ID,
+    ]);
+
+    if (response.affectedRows === 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Order with id = ${ID} not found.`,
+      });
+    }
+
+    const data = await getOrderByID(ID);
+    return res.status(200).json({
+      success: true,
+      message: `Order updated successfully.`,
+      data,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: `Error while trying to update order with id ${ID}.`,
       error: error.message,
     });
   }
@@ -114,6 +160,9 @@ const updateByID = async (req, res) => {
   }
 };
 
+
+
+
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
   const query = `DELETE FROM \`orders\` WHERE id = ?`;
@@ -153,4 +202,5 @@ module.exports = {
   addOrder,
   updateByID,
   deleteByID,
+  updateStatus,
 };

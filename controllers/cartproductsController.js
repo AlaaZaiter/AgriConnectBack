@@ -56,7 +56,7 @@ const addCartProducts = async (req, res) => {
 
   try {
     const result = await connection.query(
-      'INSERT INTO `orderproducts` (Cartid ,productId,	Quantity) VALUES (?,?,?);',
+      'INSERT INTO `cartproducts` (Cartid ,productId,	Quantity) VALUES (?,?,?);',
       [Cartid ,productId,	Quantity]
     );
 

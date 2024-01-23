@@ -7,11 +7,13 @@ const {
   addPostDiscussions,
   getDiscussionsByPostId,
   getPostsByDiscussionId,
+  getMostPopularPosts,
 } = require('../controllers/postdiscussionsController');
 
 router.get('/getAll', getAll);
-router.get('/getByDisID/:PostID', getDiscussionsByPostId);
-router.get('/getByPostID/:DisID', getPostsByDiscussionId);
+router.get('/getMost', getMostPopularPosts);
+router.get('/getByPostID/:PostID', getDiscussionsByPostId);
+router.get('/getByDisID/:DisID', getPostsByDiscussionId);
 router.post('/add', addPostDiscussions);
 
 

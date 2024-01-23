@@ -2,6 +2,7 @@ require('dotenv').config();
 const { initializeApp } = require('firebase/app');
 const firebaseConfig = require('./config/firebase');
 const emailValidator = require('deep-email-validator');
+const translate=require('translate-google')
 
 
 // Initialize firebase app
@@ -38,7 +39,11 @@ app.use('/payment',paymentRoute)
 app.use('/postdiscussions',postdiscussions)
 app.use('/orderProducst',orderProducst)
 app.use('/cartproducts',cartproducts)
-
+app.post('/translate',async(req,res)=>{
+  const{msg,to}=req.body;
+ const translation= await translate(msg,{ from:'auto',to:to})
+ res.status(200).json({translation})
+})
 async function isEmailValid(email) {
   return emailValidator.validate(email)
 }

@@ -144,6 +144,30 @@ const updateByID = async (req, res) => {
   }
 };
 
+const decrementStock= async (req,res)=>{
+  const {ID } = req.params;
+  const query = `UPDATE product SET stock = stock - 1 WHERE id = ?`;
+  try {
+    const response = await connection.query(query,[
+      ID,
+    ])
+    if (!response.affectedRows)
+      return res.status(400).json({
+        success: false,
+        message: `product with id = ${ID} not found.`,
+      });
+    return res.status(200).json({
+      success: true,
+      message: `product with id ${ID} deleted successfully.`,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: `Unable to delete product with id ${ID}.`,
+      error: error.message,
+    });
+  }
+}
 
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
@@ -223,4 +247,5 @@ module.exports = {
   addProduct,
   updateByID,
   deleteByID,
+  decrementStock,
 };

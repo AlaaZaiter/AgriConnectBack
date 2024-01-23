@@ -74,6 +74,29 @@ const addOrderProducts = async (req, res) => {
     });
   }
 };
+const getOrderByUserID = async (req, res) => {
+  const UserID = req.params.UserID;
+  const query = `
+  SELECT * 
+    FROM orders
+    where UserID = ?;
+`;
+
+try {
+  const [response] = await connection.query(query,[UserID]);
+  return res.status(200).json({
+    success: true,
+    message: `All orderProducst retrieved successfully.`,
+    data: response,
+  });
+} catch (error) {
+  return res.status(400).json({
+    success: false,
+    message: `Unable to retrieve all orderProducst.`,
+    error: error.message,
+  });
+}
+};
 
 
 
@@ -84,4 +107,5 @@ module.exports = {
   getAll,
   addOrderProducts,
   getProductsByOrderId,
+  getOrderByUserID,
 };

@@ -1,156 +1,67 @@
 const { format } = require('date-fns');
 const connection = require('../config/db');
+const SECRET_KEY=process.env.PAYMENT_KEY;
+const stripe = require('stripe')(SECRET_KEY);
 
-const getAll = async (_, res) => {
-  const query = `SELECT * FROM \`payment\``;
-  try {
-    const [response] = await connection.query(query);
-    return res.status(200).json({
-      success: true,
-      message: `All payment retrieved successfully.`,
-      data: response,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: `Unable to retrieve all payment.`,
-      error: error.message,
-    });
-  }
-};
 
-const getByID = async (req, res) => {
-  const ID = req.params.ID;
-  const response = await getPaymentByID(ID);
-  if (!Array.isArray(response))
-    return res.status(400).json({
-      success: false,
-      message: `Unable to retrieve payment with id ${ID}.`,
-      data: response,
-    });
-  if (!response.length)
-    return res.status(400).json({
-      success: false,
-      message: `payment with id ${ID} not found.`,
-    });
-  return res.status(200).json({
-    success: true,
-    message: `payment with id ${ID} retrieved successfully.`,
-    data: {
-      ...response[0],
-    },
-  });
-};
 
-const addPayment = async (req, res) => {
-  const {OrderID,Amount,PaymentStatus,PaymentMethod } = req.body;
-
-  try {
-    const result = await connection.query(
-      'INSERT INTO `payment` (OrderID,Amount,PaymentStatus,PaymentMethod) VALUES (?,?,?,?);',
-      [OrderID,Amount,PaymentStatus,PaymentMethod]
-    );
-
-    console.log(result);
-    res.status(201).json({
-      success: true,
-      message: 'Data added successfully',
-    });
-  } catch (error) {
-    console.error('Error adding new order:', error);
-    res.status(400).json({
-      success: false,
-      message: 'Unable to add new data',
-      error: error.message,
-    });
-  }
-};
-
-const updateByID = async (req, res) => {
-  const { ID } = req.params;
-  const { OrderID,Amount,PaymentStatus,PaymentMethod } = req.body;
-
+const addPaymentRecord = async (orderID, amount, paymentStatus, paymentMethod, stripeToken) => {
   const query = `
-    UPDATE \`payment\`
-    SET OrderID = ?, Amount = ?, PaymentStatus = ?, PaymentMethod = ?
-    WHERE id = ?
+    INSERT INTO payment (OrderID, Amount, PaymentStatus, PaymentMethod, StripeToken)
+    VALUES (?, ?, ?, ?, ?);
   `;
-
   try {
-    if (!OrderID || !Amount || !PaymentStatus || !PaymentMethod ) {
-      return res.status(400).json({
-        success: false,
-        message: `Enter all fields to update payment with id = ${ID}.`,
-      });
-    }
+    const [result] = await connection.query(query, [orderID, amount, paymentStatus, paymentMethod, stripeToken]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
 
-    const [response] = await connection.query(query, [
-        OrderID,
-        Amount,
-        PaymentStatus,
-        PaymentMethod,
-        ID,
-    ]);
 
-    if (response.affectedRows === 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Payment with id = ${ID} not found.`,
-      });
-    }
+const processPayment = async (req, res) => {
+  try {
+    const { OrderID, amount, PaymentMethod, stripeToken } = req.body;
 
-    const data = await getPaymentByID(ID);
+    // Create a charge using the received token
+    const charge = await stripe.charges.create({
+      amount: amount * 100, // Convert to cents if your amount is in dollars
+      currency: 'usd',
+      source: stripeToken, // Use the token here
+      description: `Charge for order ${OrderID}`,
+    });
+
+    // Insert the payment record into the database
+    await addPaymentRecord(OrderID, amount, 'succeeded', PaymentMethod, charge.id);
+
+    res.status(200).json({ success: true, chargeId: charge.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+const getStatusByOrderId= async (req,res)=>{
+  const {orderID}=req.params;
+    const query ='select p.PaymentStatus from payment p join orders o on p.OrderID=o.id where p.OrderID =? '
+    
+  try {
+    const [result] = await connection.query(query,orderID)
     return res.status(200).json({
       success: true,
-      message: `payment updated successfully.`,
-      data,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: `Error while trying to update Payment with id ${ID}.`,
-      error: error.message,
-    });
+      message: `status with id ${orderID} retrieved successfully.`,
+      data: result[0],
+      
+    });  } catch (error) {
+    throw error;
   }
-};
+}
 
-const deleteByID = async (req, res) => {
-  const { ID } = req.params;
-  const query = `DELETE FROM \`payment\` WHERE id = ?`;
-  try {
-    const [response] = await connection.query(query, [ID]);
-    if (!response.affectedRows)
-      return res.status(400).json({
-        success: false,
-        message: `payment with id = ${ID} not found.`,
-      });
-    return res.status(200).json({
-      success: true,
-      message: `payment with id ${ID} deleted successfully.`,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: `Unable to delete payment with id ${ID}.`,
-      error: error.message,
-    });
-  }
-};
 
-const getPaymentByID = async (ID) => {
-  const query = `SELECT * FROM \`payment\` WHERE id = ?`;
-  try {
-    const [response] = await connection.query(query, [ID]);
-    return response;
-  } catch (error) {
-    return error.message;
-  }
-};
+
+
 
 module.exports = {
-  getAll,
-  getByID,
-  addPayment,
-  updateByID,
-  deleteByID,
+  
+  getStatusByOrderId,
+  processPayment,
 };
