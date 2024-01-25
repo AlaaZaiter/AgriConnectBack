@@ -177,7 +177,44 @@ const updateByID = async (req, res) => {
     });
   }
 };
+const updateWithImageByID = async (req, res) => {
+  const { ID } = req.params;
+  const {FullName,PhoneNumber} = req.body;
+  const ProductImage = await FileUpload(req.files.image[0]);
 
+ 
+
+  
+
+  const query = `UPDATE users SET Title = ?, stock = ?, description = ? WHERE id = ?;`;
+
+  try {
+    const [response] = await connection.query(query, [
+      FullName,PhoneNumber,ProductImage.downloadURL
+    ]);
+
+    if (!response.affectedRows) {
+      return res.status(400).json({
+        success: false,
+        message: `User with ID = ${ID} not found`,
+      });
+    }
+
+    const data = await getUserByID(ID);
+
+    res.status(200).json({
+      success: true,
+      message: `User with ID = ${ID} updated successfully`,
+      data: data[0],
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: `Unable to update user with ID = ${ID}`,
+      error: error.message,
+    });
+  }
+};
 
 const switchToAdmin = async (req, res) => {
   const { ID } = req.params;
@@ -331,4 +368,5 @@ module.exports = {
   deleteByID,
   addFarmer,
   verifyEmail,
+  updateWithImageByID
 };

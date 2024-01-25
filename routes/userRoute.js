@@ -12,6 +12,7 @@ const {
   switchToAdmin,
   deleteByID,
   verifyEmail,
+  updateWithImageByID,
 } = require('../controllers/userController');
 const isAuthenticated = require('../middlwares/isAuth');
 
@@ -19,7 +20,8 @@ router.get('/getAll', getAll);
 router.get('/getByID/:ID', getByID);
 router.post('/login', login);
 router.post('/register', upload.fields([{ name: 'image' }]),register);
-router.put('/update/:ID', updateByID);
+router.put('/update/:ID',upload.fields([{ name: 'image' }]), updateByID);
+router.put('/updateWithImg/:ID',upload.fields([{ name: 'image' }]), updateWithImageByID);
 router.put(
   '/switchToAdmin/:ID',
   isAuthenticated(['admin']),
