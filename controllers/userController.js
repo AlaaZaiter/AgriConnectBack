@@ -266,7 +266,7 @@ const deleteByID = async (req, res) => {
 };
 
 const getUserByID = async (ID) => {
-  const query = `SELECT id, FullName, email, role,created_at,image	 FROM users WHERE id = ?;`;
+  const query = `SELECT id, FullName, email,phoneNumber, role,created_at,image	 FROM users WHERE id = ?;`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;
