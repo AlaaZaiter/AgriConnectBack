@@ -1,6 +1,6 @@
 const { format } = require('date-fns');
 const connection = require('../config/db');
-const SECRET_KEY=process.env.PAYMENT_KEY;
+const SECRET_KEY='sk_test_51OZd1WJFhc9UZk7fOsGplE523D8vjjlEAqOzvZpOL2TcIMCbK3Mu8fAorQQxkTPbafzQMWXmHwa0zcDiUuZAcJxv00woUMJAeg';
 const stripe = require('stripe')(SECRET_KEY);
 
 
