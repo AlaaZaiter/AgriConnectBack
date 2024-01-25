@@ -179,18 +179,14 @@ const updateByID = async (req, res) => {
 };
 const updateWithImageByID = async (req, res) => {
   const { ID } = req.params;
-  const {FullName,PhoneNumber} = req.body;
+  const {FullName,phoneNumber} = req.body;
   const ProductImage = await FileUpload(req.files.image[0]);
-
- 
-
-  
 
   const query = `UPDATE users SET FullName = ?, phoneNumber = ?, image = ? WHERE id = ?;`;
 
   try {
     const [response] = await connection.query(query, [
-      FullName,PhoneNumber,ProductImage.downloadURL,ID
+      FullName,phoneNumber,ProductImage.downloadURL,ID
     ]);
 
     if (!response.affectedRows) {
