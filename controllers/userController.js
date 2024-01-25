@@ -186,11 +186,11 @@ const updateWithImageByID = async (req, res) => {
 
   
 
-  const query = `UPDATE users SET Title = ?, stock = ?, description = ? WHERE id = ?;`;
+  const query = `UPDATE users SET FullName = ?, phoneNumber = ?, image = ? WHERE id = ?;`;
 
   try {
     const [response] = await connection.query(query, [
-      FullName,PhoneNumber,ProductImage.downloadURL
+      FullName,PhoneNumber,ProductImage.downloadURL,ID
     ]);
 
     if (!response.affectedRows) {
