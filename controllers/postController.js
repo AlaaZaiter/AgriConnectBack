@@ -68,7 +68,7 @@ const addPost = async (req, res) => {
     const result = await connection.query(
       `INSERT INTO forumpost (Content,	
         FarmerUserID,
-        File) VALUES (?,?,?);`,
+        File,created_at) VALUES (?,?,?,current_timestamp());`,
       [Content,	
         FarmerUserID,
          image.downloadURL]
